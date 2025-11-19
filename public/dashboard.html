@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CBF - Painel</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="module" src="/js/auth.js"></script>
+</head>
+<body onload="requireAuth()">
+  <div class="sidebar">
+    <h2>CBF Antidoping</h2>
+    <a href="/atletas.html">Atletas</a>
+    <a href="/novo-atleta.html">Novo Atleta</a>
+    <a href="/tests.html">Testes</a>
+    <a href="/novo-teste.html">Novo Teste</a>
+    <a href="/results.html">Resultados</a>
+    <a href="/novo-result.html">Novo Resultado</a>
+    <a href="/reports.html">Relatórios</a>
+    <a href="#" onclick="logout()">Sair</a>
+  </div>
+  <div class="content">
+    <h1>Bem-vindo ao Painel Antidoping</h1>
+    <p>Use o menu à esquerda para navegar.</p>
+  </div>
+  <script type="module">
+    import { requireAuth } from '/js/auth.js';
+    requireAuth();
+  </script>
+</body>
+</html>

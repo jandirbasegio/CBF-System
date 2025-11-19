@@ -86,3 +86,28 @@ INSERT INTO roles (name) VALUES
 ('cbf_staff'),
 ('admin')
 ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO roles (name) VALUES
+('admin'),
+('cbf_staff'),
+('club'),
+('federation'),
+('laboratory')
+ON CONFLICT (name) DO NOTHING;
+
+--------------------------------------------------------
+-- CRIAÇÃO DE USUÁRIO ADMIN PADRÃO
+-- usuário: admin
+-- email: admin@cbf.com
+-- senha: 123456
+--------------------------------------------------------
+
+INSERT INTO users (username, email, password_hash, role_id, organization)
+VALUES (
+    'admin',
+    'admin@cbf.com',
+    crypt('123456', gen_salt('bf')),
+    (SELECT id FROM roles WHERE name = 'admin'),
+    'CBF'
+)
+ON CONFLICT (email) DO NOTHING;

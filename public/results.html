@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Resultados</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="sidebar">
+    <h2>CBF Antidoping</h2>
+    <a href="/dashboard.html">Início</a>
+    <a href="/novo-result.html">Novo Resultado</a>
+  </div>
+
+  <div class="content">
+    <h1>Resultados</h1>
+    <div id="lista"></div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, apiFetch } from '/js/auth.js';
+    requireAuth();
+
+    const lista = document.getElementById('lista');
+
+    async function carregarResultados() {
+      try {
+        const res = await apiFetch('/test-results');
+        const data = await res.json();
+        lista.innerHTML = data.map(r => `
+          <div class="card">
+            <b>Resultado ${r.id}</b><br>
+            Teste: ${r.test_id}<br>
+            Atleta: ${r.first_name || ''} ${r.last_name || ''} <small>${r.id_document || ''}</small><br>
+            Resultado: ${r.result}<br>
+            Substâncias: ${r.substances ? JSON.stringify(r.substances) : '—'}<br>
+            Laudo: ${r.analysis_report || '—'}<br>
+            Reportado em: ${r.reported_at || ''}
+          </div>
+        `).join('');
+      } catch (e) {
+        lista.innerText = 'Erro ao carregar resultados';
+      }
+    }
+
+    carregarResultados();
+  </script>
+</body>
+</html>

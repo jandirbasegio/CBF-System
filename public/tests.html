@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Testes</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="sidebar">
+    <h2>CBF Antidoping</h2>
+    <a href="/dashboard.html">Início</a>
+    <a href="/novo-teste.html">Novo Teste</a>
+  </div>
+
+  <div class="content">
+    <h1>Testes Agendados</h1>
+    <div id="lista"></div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, apiFetch } from '/js/auth.js';
+    requireAuth();
+
+    const lista = document.getElementById('lista');
+
+    async function carregarTestes() {
+      try {
+        const res = await apiFetch('/tests');
+        const data = await res.json();
+        lista.innerHTML = data.map(t => `
+          <div class="card">
+            <b>Teste ${t.id}</b><br>
+            Atleta: ${t.first_name || t.athlete_id} ${t.last_name || ''}<br>
+            Sample: ${t.sample_id || ''}<br>
+            Data: ${t.scheduled_date || t.test_date || ''}<br>
+            Laboratório: ${t.laboratory || t.responsible_lab || ''}<br>
+            <small>ID do atleta: ${t.athlete_id}</small>
+          </div>
+        `).join('');
+      } catch (e) {
+        lista.innerText = 'Erro ao carregar testes';
+      }
+    }
+
+    carregarTestes();
+  </script>
+</body>
+</html>

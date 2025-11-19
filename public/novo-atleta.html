@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Novo Atleta</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header>
+  <h1>Novo Atleta</h1>
+  <nav>
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="/atletas.html">Atletas</a>
+    <a href="/novo-atleta.html">Novo Atleta</a>
+    <a href="#" id="logoutBtn">Sair</a>
+  </nav>
+</header>
+
+<main>
+  <h2>Cadastrar Atleta</h2>
+
+  <form id="formAtleta">
+    <input id="first_name" placeholder="Nome" required>
+    <input id="last_name" placeholder="Sobrenome" required>
+    <input id="date_of_birth" type="date">
+    <input id="nationality" placeholder="Nacionalidade">
+    <input id="gender" placeholder="Gênero">
+    <input id="id_document" placeholder="Documento (único)">
+    <button type="submit">Salvar</button>
+  </form>
+
+  <p id="statusMsg"></p>
+</main>
+
+<script src="/js/auth.js"></script>
+<script src="/js/athletes.js"></script>
+
+</body>
+</html>
