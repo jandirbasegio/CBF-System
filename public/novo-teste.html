@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Novo Teste Antidoping</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header>
+    <h1>Cadastro de Novo Teste Antidoping</h1>
+    <nav>
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="/atletas.html">Atletas</a>
+        <a href="/tests.html">Testes</a>
+        <a href="/results.html">Resultados</a>
+        <a href="/index.html" onclick="localStorage.clear()">Sair</a>
+    </nav>
+</header>
+
+<main class="container">
+    <div class="card">
+
+        <h2>Novo Teste</h2>
+
+        <!-- NOME DO ATLETA -->
+        <label>Atleta</label>
+        <input id="athlete_name" placeholder="Digite o nome do atleta">
+        <div id="athleteResults" class="autocomplete-results"></div>
+
+        <!-- SAMPLE ID -->
+        <label>Sample ID</label>
+        <input id="sample_id" placeholder="Ex: SAMPLE-1234">
+
+        <!-- DATA -->
+        <label>Data agendada</label>
+        <input id="scheduled_date" type="datetime-local">
+
+        <!-- LABORATÓRIO -->
+        <label>Laboratório</label>
+        <input id="laboratory" placeholder="Nome do laboratório">
+
+        <button id="saveTestBtn" class="btn">Salvar Teste</button>
+
+        <p id="testMsg" class="msg"></p>
+
+    </div>
+</main>
+
+<script src="/js/utils.js"></script>
+<script src="/js/tests.js"></script>
+
+</body>
+</html>

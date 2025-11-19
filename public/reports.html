@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Relatórios</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="sidebar">
+    <h2>CBF Antidoping</h2>
+    <a href="/dashboard.html">Início</a>
+  </div>
+
+  <div class="content">
+    <h1>Relatórios</h1>
+    <div class="card">
+      <button class="button" id="btnSummary">Atualizar Resumo</button>
+      <pre id="resumo"></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, apiFetch } from '/js/auth.js';
+    requireAuth();
+
+    document.getElementById('btnSummary').addEventListener('click', async () => {
+      try {
+        const res = await apiFetch('/reports/summary');
+        const d = await res.json();
+        document.getElementById('resumo').innerText = JSON.stringify(d, null, 2);
+      } catch (e) {
+        document.getElementById('resumo').innerText = 'Erro';
+      }
+    });
+  </script>
+</body>
+</html>

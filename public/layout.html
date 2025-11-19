@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CBF Antidoping</title>
+
+  <link rel="stylesheet" href="/styles.css">
+
+  <style>
+    header {
+      background: #003366;
+      color: white;
+      padding: 15px 25px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    nav {
+      background: #0055a5;
+      padding: 10px 20px;
+      display: flex;
+      gap: 20px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .content-wrapper {
+      padding: 30px;
+      max-width: 900px;
+      margin: auto;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>CBF - Sistema Antidoping</header>
+
+  <nav>
+    <a href="/layout.html?page=dashboard.html">Dashboard</a>
+    <a href="/layout.html?page=atletas.html">Atletas</a>
+    <a href="/layout.html?page=novo-atleta.html">Novo Atleta</a>
+    <a href="/layout.html?page=tests.html">Testes</a>
+    <a href="/layout.html?page=results.html">Resultados</a>
+    <a href="/layout.html?page=reports.html">Relatórios</a>
+    <a href="/logout" style="margin-left: auto;">Sair</a>
+  </nav>
+
+  <div class="content-wrapper" id="page-container">
+    Carregando página...
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get("page");
+
+    fetch("/" + page)
+      .then(r => r.text())
+      .then(html => {
+        document.getElementById("page-container").innerHTML = html;
+      })
+      .catch(() => {
+        document.getElementById("page-container").innerHTML =
+          "<h2>Erro ao carregar página.</h2>";
+      });
+  </script>
+
+</body>
+
+</html>

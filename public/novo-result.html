@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Novo Resultado de Teste</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header>
+    <h1>Lançar Resultado de Teste</h1>
+    <nav>
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="/atletas.html">Atletas</a>
+        <a href="/tests.html">Testes</a>
+        <a href="/results.html">Resultados</a>
+        <a href="/index.html" onclick="localStorage.clear()">Sair</a>
+    </nav>
+</header>
+
+<main class="container">
+    <div class="card">
+
+        <h2>Novo Resultado</h2>
+
+        <!-- AUTOCOMPLETE ATLETA -->
+        <label>Atleta</label>
+        <input id="res_athlete_name" placeholder="Digite o nome do atleta">
+        <div id="resAthResults" class="autocomplete-results"></div>
+
+        <!-- SELECT DE TESTES -->
+        <label>Selecione o teste</label>
+        <select id="res_test_select">
+            <option value="">Selecione...</option>
+        </select>
+
+        <!-- RESULTADO -->
+        <label>Resultado</label>
+        <select id="res_result">
+            <option value="">Selecione...</option>
+            <option value="negative">Negativo</option>
+            <option value="positive">Positivo</option>
+        </select>
+
+        <!-- SUBSTÂNCIAS -->
+        <label>Substâncias encontradas</label>
+        <input id="res_substances" placeholder="Ex: Cocaína, THC, Anabolizantes">
+
+        <!-- RELATÓRIO -->
+        <label>Laudo / Observações</label>
+        <textarea id="res_report" rows="5" placeholder="Escreva o laudo ou observações..."></textarea>
+
+        <button id="saveResultBtn" class="btn">Salvar Resultado</button>
+
+        <p id="resMsg" class="msg"></p>
+
+    </div>
+</main>
+
+<script src="/js/utils.js"></script>
+<script src="/js/results.js"></script>
+
+</body>
+</html>

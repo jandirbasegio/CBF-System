@@ -1,11 +1,127 @@
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f5f7fb; color:#222; }
-header { background:#073763; color:white; padding:12px 20px; }
-.container { display:flex; gap:16px; padding:16px; flex-wrap:wrap; }
-.card { background:white; padding:12px; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.08); flex:1; min-width:280px; }
-.topbar { display:flex; justify-content:space-between; align-items:center; padding:8px 16px; background:#fff3; }
-input, button { padding:8px; margin:6px 0; width:100%; box-sizing:border-box; }
-button { cursor:pointer; background:#073763; color:white; border:none; border-radius:4px; }
-.error { color:#b00020; margin-top:8px; }
-ul { list-style:none; padding:0; }
-li { padding:8px 6px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; }
-small { color:#666; }
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  background: #f3f6fa;
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 260px;
+  background: #0a3d62;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  margin-bottom: 30px;
+  font-size: 22px;
+  text-align: center;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: block;
+  font-size: 16px;
+  transition: 0.2s;
+}
+
+.sidebar a:hover {
+  background: #1e5799;
+}
+
+.logout-btn {
+  margin-top: auto;
+  background: #c0392b !important;
+}
+
+/* HEADER */
+.header {
+  width: 100%;
+  background: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #ddd;
+}
+
+.header span {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* MAIN CONTENT */
+.content {
+  padding: 25px;
+  width: 100%;
+  overflow-y: auto;
+}
+
+/* CARDS */
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px #00000015;
+}
+
+.card h3 {
+  margin-bottom: 15px;
+}
+
+/* FORMS */
+input, select, textarea, button {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+}
+
+button {
+  background: #2980b9;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #3498db;
+}
+
+.autocomplete-results {
+  background: white;
+  border: 1px solid #ccc;
+  max-height: 160px;
+  overflow-y: auto;
+  position: absolute;
+  z-index: 1000;
+  width: 92%;
+  border-radius: 8px;
+}
+
+.autocomplete-item {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.autocomplete-item:hover {
+  background: #eef3ff;
+}
