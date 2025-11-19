@@ -15,6 +15,16 @@ export async function authenticate(req) {
   }
 }
 
+export async function verifyToken(req, res) {
+  try {
+    await authenticate(req);
+    return req.user;
+  } catch (err) {
+    res.status(err.status || 401).json({ error: err.message || 'Token inválido' });
+    return null;
+  }
+}
+
 export async function authorize(req, allowedRoles = []) {
   // allowedRoles: array of role names or ["any"] to allow all authenticated users
   const r = await pool.query('SELECT name FROM roles WHERE id=$1', [req.user.role_id]);

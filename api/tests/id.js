@@ -1,6 +1,6 @@
 // /api/tests/[id].js
-import pool from "../../_db.js";
-import { verifyToken } from "../../_auth.js";
+import { pool } from "../_shared/db.js";
+import { verifyToken } from "../_shared/auth.js";
 
 /**
  * PUT /api/tests/:id  -> atualiza campos do teste (sample_id, collected_date, status, laboratory, technician...)

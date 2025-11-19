@@ -1,6 +1,6 @@
 // /api/tests/index.js
-import pool from "../../_db.js";
-import { verifyToken } from "../../_auth.js";
+import { pool } from "../_shared/db.js";
+import { verifyToken } from "../_shared/auth.js";
 
 /**
  * GET  /api/tests?search=...   -> lista testes (com dados do atleta)

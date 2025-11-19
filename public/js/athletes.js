@@ -53,17 +53,33 @@ if (form) {
             id_document: document.getElementById("id_document").value
         };
 
-        const res = await fetch("/api/athletes", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: "Bearer " + token
-            },
-            body: JSON.stringify(body)
-        });
+        try {
+            const res = await fetch("/api/athletes", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + token
+                },
+                body: JSON.stringify(body)
+            });
 
-        const data = await res.json();
-        document.getElementById("statusMsg").textContent = data.message;
+            const data = await res.json();
+            const statusMsg = document.getElementById("statusMsg");
+            if (res.ok) {
+                statusMsg.textContent = data.message || "Atleta cadastrado com sucesso!";
+                statusMsg.style.color = "#27ae60";
+                form.reset();
+            } else {
+                statusMsg.textContent = data.error || data.message || "Erro ao cadastrar atleta";
+                statusMsg.style.color = "#e74c3c";
+                console.error("Erro ao salvar atleta:", data);
+            }
+        } catch (error) {
+            const statusMsg = document.getElementById("statusMsg");
+            statusMsg.textContent = "Erro de conexão: " + error.message;
+            statusMsg.style.color = "#e74c3c";
+            console.error("Erro ao fazer requisição:", error);
+        }
     });
 }
 
@@ -87,10 +103,25 @@ async function deleteAthlete(name) {
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`/api/athletes/${encodeURIComponent(name)}`, {
-        method: "DELETE",
-        headers: { Authorization: "Bearer " + token }
-    });
+    try {
+        const res = await fetch(`/api/athletes/name?name=${encodeURIComponent(name)}`, {
+            method: "DELETE",
+            headers: { 
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            }
+        });
 
-    loadAthletes();
+        const data = await res.json();
+        
+        if (res.ok) {
+            loadAthletes();
+        } else {
+            alert("Erro ao excluir atleta: " + (data.error || data.message || "Erro desconhecido"));
+            console.error("Erro ao excluir atleta:", data);
+        }
+    } catch (error) {
+        alert("Erro de conexão ao excluir atleta: " + error.message);
+        console.error("Erro ao fazer requisição:", error);
+    }
 }
