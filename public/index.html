@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CBF - Antidoping</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header><h1>CBF - Antidoping</h1></header>
+
+  <main>
+    <section id="auth-section">
+      <h2>Login</h2>
+      <form id="login-form">
+        <input type="text" id="username" placeholder="Usuário" required />
+        <input type="password" id="password" placeholder="Senha" required />
+        <button type="submit">Entrar</button>
+      </form>
+      <div id="login-error" class="error"></div>
+    </section>
+
+    <section id="app-section" style="display:none;">
+      <div class="topbar">
+        <span id="who"></span>
+        <button id="logoutBtn">Sair</button>
+      </div>
+
+      <div class="container">
+        <div class="card">
+          <h3>Atletas</h3>
+          <div>
+            <input id="searchAth" placeholder="Buscar atleta..." />
+            <button id="btnSearch">Buscar</button>
+          </div>
+          <button id="btnNewAth">Novo atleta</button>
+          <ul id="athleteList"></ul>
+        </div>
+
+        <div class="card">
+          <h3>Formulário de atleta</h3>
+          <form id="athleteForm">
+            <input type="hidden" id="athleteId" />
+            <input id="first_name" placeholder="Nome" required />
+            <input id="last_name" placeholder="Sobrenome" required />
+            <input id="date_of_birth" type="date" />
+            <input id="nationality" placeholder="Nacionalidade" />
+            <input id="gender" placeholder="Gênero" />
+            <input id="id_document" placeholder="Documento" />
+            <button type="submit">Salvar</button>
+            <button type="button" id="btnCancel">Cancelar</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Relatórios</h3>
+          <button id="btnSummary">Resumo</button>
+          <pre id="reportArea"></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
