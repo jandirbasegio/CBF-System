@@ -1,9 +1,9 @@
-// /api/tests/[id].js
+// /api/tests/id.js
 import { pool } from "../_shared/db.js";
 import { verifyToken } from "../_shared/auth.js";
 
 /**
- * PUT /api/tests/:id  -> atualiza campos do teste (sample_id, collected_date, status, laboratory, technician...)
+ * DELETE /api/tests/id?id=... -> exclui teste
  */
 export default async function handler(req, res) {
   const user = await verifyToken(req, res);
@@ -12,48 +12,35 @@ export default async function handler(req, res) {
   const id = req.query.id;
 
   try {
-    if (req.method !== "PUT") return res.status(405).json({ error: "Método não permitido" });
+    if (req.method === "DELETE") {
+      if (!id) {
+        return res.status(400).json({ error: "ID do teste é obrigatório" });
+      }
 
-    const {
-      sample_id,
-      scheduled_date,
-      collected_date,
-      laboratory,
-      technician,
-      chain_of_custody,
-      status
-    } = req.body;
+      // Verificar se o teste existe
+      const checkResult = await pool.query('SELECT id FROM tests WHERE id = $1', [id]);
+      
+      if (checkResult.rowCount === 0) {
+        return res.status(404).json({ error: "Teste não encontrado" });
+      }
 
-    const q = `
-      UPDATE tests SET
-        sample_id = $1,
-        scheduled_date = $2,
-        collected_date = $3,
-        laboratory = $4,
-        technician = $5,
-        chain_of_custody = $6,
-        status = $7,
-        updated_at = now()
-      WHERE id = $8
-      RETURNING *
-    `;
+      // Excluir o teste (CASCADE vai excluir resultados relacionados automaticamente)
+      const result = await pool.query('DELETE FROM tests WHERE id = $1', [id]);
+      
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Teste não encontrado" });
+      }
 
-    const r = await pool.query(q, [
-      sample_id || null,
-      scheduled_date || null,
-      collected_date || null,
-      laboratory || null,
-      technician || null,
-      chain_of_custody || null,
-      status || null,
-      id
-    ]);
+      return res.status(200).json({ message: "Teste removido com sucesso" });
+    }
 
-    if (r.rowCount === 0) return res.status(404).json({ error: "Teste não encontrado" });
-
-    return res.json(r.rows[0]);
+    res.status(405).json({ error: "Método não permitido" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erro interno" });
+    console.error("Erro ao excluir teste:", err);
+    res.status(500).json({ 
+      error: "Erro interno",
+      message: err.message || String(err)
+    });
   }
 }
+

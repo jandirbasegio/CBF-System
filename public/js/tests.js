@@ -14,16 +14,54 @@ async function carregarTestes(filter = '') {
   const data = await res.json();
   const container = document.getElementById('testsList');
   if (!container) return;
-  container.innerHTML = data.map(t => `
+  container.innerHTML = data.map(t => {
+    // Formatar data corretamente
+    let dataFormatada = '—';
+    const dataOriginal = t.scheduled_date || t.test_date || t.collected_date;
+    if (dataOriginal) {
+      try {
+        const date = new Date(dataOriginal);
+        if (!isNaN(date.getTime())) {
+          dataFormatada = date.toLocaleDateString('pt-BR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          });
+        }
+      } catch (e) {
+        console.error('Erro ao formatar data:', e, dataOriginal);
+      }
+    }
+    
+    // Traduzir situação/status para português
+    let situacaoTraduzida = t.status || '—';
+    if (situacaoTraduzida !== '—') {
+      const statusLower = situacaoTraduzida.toLowerCase();
+      const traducoes = {
+        'pending': 'Pendente',
+        'scheduled': 'Agendado',
+        'completed': 'Concluído',
+        'in_progress': 'Em Andamento',
+        'cancelled': 'Cancelado',
+        'collected': 'Coletado',
+        'analyzed': 'Analisado',
+        'awaiting': 'Aguardando',
+        'awaiting_results': 'Aguardando Resultados'
+      };
+      situacaoTraduzida = traducoes[statusLower] || situacaoTraduzida;
+    }
+    
+    return `
     <div class="card">
       <b>${t.first_name ? (t.first_name + ' ' + (t.last_name||'')) : 'Atleta desconhecido'}</b><br>
       Teste: ${t.id}<br>
       Sample: ${t.sample_id || '—'}<br>
-      Data agendada: ${t.scheduled_date || '—'}<br>
+      Data agendada: ${dataFormatada}<br>
       Laboratório: ${t.laboratory || '—'}<br>
-      Status: ${t.status || '—'}<br>
+      Situação: ${situacaoTraduzida}<br>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // --- AUTOCOMPLETE e criação de novo teste ---

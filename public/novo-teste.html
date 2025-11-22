@@ -10,11 +10,10 @@
 <header>
     <h1>Cadastro de Novo Teste Antidoping</h1>
     <nav>
-        <a href="/dashboard.html">Dashboard</a>
-        <a href="/atletas.html">Atletas</a>
+        <a href="/dashboard.html">Inicio</a>
         <a href="/tests.html">Testes</a>
-        <a href="/results.html">Resultados</a>
-        <a href="/index.html" onclick="localStorage.clear()">Sair</a>
+        <a href="/novo-teste.html">Novo Teste</a>
+        <a href="#" id="logoutBtn">Sair</a>
     </nav>
 </header>
 
@@ -29,8 +28,8 @@
         <div id="athleteResults" class="autocomplete-results"></div>
 
         <!-- SAMPLE ID -->
-        <label>Sample ID</label>
-        <input id="sample_id" placeholder="Ex: SAMPLE-1234">
+        <label>ID da amostra do exame</label>
+        <input id="sample_id" placeholder="Ex: ID-1234">
 
         <!-- DATA -->
         <label>Data agendada</label>
@@ -47,6 +46,7 @@
     </div>
 </main>
 
+<script src="/js/auth.js"></script>
 <script src="/js/utils.js"></script>
 <script src="/js/tests.js"></script>
 

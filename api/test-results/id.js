@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         );
       }
 
-      return res.status(200).json({ message: "Resultado excluído com sucesso" });
+      return res.status(200).json({ message: "Resultado removido com sucesso" });
     }
 
     return res.status(405).json({ error: "Método não permitido" });

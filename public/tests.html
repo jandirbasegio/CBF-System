@@ -10,38 +10,161 @@
   <div class="sidebar">
     <h2>CBF Antidoping</h2>
     <a href="/dashboard.html">Início</a>
+    <a href="/tests.html">Testes</a>
     <a href="/novo-teste.html">Novo Teste</a>
+    <a href="#" id="logoutBtn">Sair</a>
   </div>
 
   <div class="content">
     <h1>Testes Agendados</h1>
+
+    <div class="search-box">
+      <input type="text" id="searchTest" placeholder="Buscar teste por nome do atleta...">
+      <button id="btnSearch">Buscar</button>
+    </div>
+
     <div id="lista"></div>
   </div>
 
-  <script type="module">
-    import { requireAuth, apiFetch } from '/js/auth.js';
-    requireAuth();
+  <script src="/js/auth.js"></script>
+  <script>
+    // Verificar autenticação
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/index.html';
+    }
+    
+    // Configurar botão de logout se ainda não foi configurado
+    document.addEventListener('DOMContentLoaded', () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn && typeof logout === 'function') {
+        logoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
+        });
+      }
+    });
 
     const lista = document.getElementById('lista');
 
-    async function carregarTestes() {
+    async function carregarTestes(filter = '') {
       try {
-        const res = await apiFetch('/tests');
+        const url = '/api/tests' + (filter ? ('?search=' + encodeURIComponent(filter)) : '');
+        const res = await fetch(url, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+
+        if (!res.ok) {
+          throw new Error('Erro ao carregar testes');
+        }
+
         const data = await res.json();
-        lista.innerHTML = data.map(t => `
-          <div class="card">
-            <b>Teste ${t.id}</b><br>
-            Atleta: ${t.first_name || t.athlete_id} ${t.last_name || ''}<br>
-            Sample: ${t.sample_id || ''}<br>
-            Data: ${t.scheduled_date || t.test_date || ''}<br>
-            Laboratório: ${t.laboratory || t.responsible_lab || ''}<br>
-            <small>ID do atleta: ${t.athlete_id}</small>
-          </div>
-        `).join('');
+        
+        if (data.length === 0) {
+          lista.innerHTML = '<div class="card"><p>Nenhum teste encontrado.</p></div>';
+        } else {
+            lista.innerHTML = data.map(t => {
+            // Usa sample_id se disponível, senão mostra primeiros 8 caracteres do UUID
+            const testeId = t.sample_id || (t.id ? t.id.substring(0, 8) : 'Não disponível');
+            const nomeAtleta = t.first_name && t.last_name 
+              ? `${t.first_name} ${t.last_name}` 
+              : (t.first_name || 'Atleta desconhecido');
+            
+            // Formatar data corretamente
+            let dataFormatada = '—';
+            const dataOriginal = t.scheduled_date || t.test_date || t.collected_date;
+            if (dataOriginal) {
+              try {
+                const date = new Date(dataOriginal);
+                if (!isNaN(date.getTime())) {
+                  dataFormatada = date.toLocaleDateString('pt-BR', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  });
+                }
+              } catch (e) {
+                console.error('Erro ao formatar data:', e, dataOriginal);
+              }
+            }
+            
+            // Traduzir situação/status para português
+            let situacaoTraduzida = t.status || '—';
+            if (situacaoTraduzida !== '—') {
+              const statusLower = situacaoTraduzida.toLowerCase();
+              const traducoes = {
+                'pending': 'Pendente',
+                'scheduled': 'Agendado',
+                'completed': 'Concluído',
+                'in_progress': 'Em Andamento',
+                'cancelled': 'Cancelado',
+                'canceled': 'Cancelado',
+                'collected': 'Coletado',
+                'analyzed': 'Analisado',
+                'awaiting': 'Aguardando',
+                'awaiting_results': 'Aguardando Resultados'
+              };
+              situacaoTraduzida = traducoes[statusLower] || situacaoTraduzida;
+            }
+            
+            return `
+            <div class="card">
+              <b>Teste: ${testeId}</b><br>
+              Atleta: ${nomeAtleta}<br>
+              ${t.sample_id ? '' : '<small>Código: ' + (t.id || 'Não disponível') + '</small><br>'}
+              Data: ${dataFormatada}<br>
+              Laboratório: ${t.laboratory || t.responsible_lab || '—'}<br>
+              Situação: ${situacaoTraduzida}<br>
+              <button onclick="deleteTest('${t.id}')">Excluir</button>
+            </div>
+          `;
+          }).join('');
+        }
       } catch (e) {
-        lista.innerText = 'Erro ao carregar testes';
+        lista.innerText = 'Erro ao carregar testes: ' + e.message;
+        console.error('Erro ao carregar testes:', e);
       }
     }
+
+    document.getElementById('btnSearch')?.addEventListener('click', () => {
+      const search = document.getElementById('searchTest').value;
+      carregarTestes(search);
+    });
+
+    // ========================
+    // APAGAR TESTE
+    // ========================
+
+    async function deleteTest(id) {
+        if (!confirm("Deseja excluir este teste?")) return;
+
+        const token = localStorage.getItem("token");
+
+        try {
+            const res = await fetch(`/api/tests/id?id=${encodeURIComponent(id)}`, {
+                method: "DELETE",
+                headers: { 
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+                carregarTestes();
+            } else {
+                alert("Erro ao excluir teste: " + (data.error || data.message || "Erro desconhecido"));
+                console.error("Erro ao excluir teste:", data);
+            }
+        } catch (error) {
+            alert("Erro de conexão ao excluir teste: " + error.message);
+            console.error("Erro ao fazer requisição:", error);
+        }
+    }
+
+    // Tornar função global para ser acessível pelo onclick
+    window.deleteTest = deleteTest;
 
     carregarTestes();
   </script>

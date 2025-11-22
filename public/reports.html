@@ -10,28 +10,627 @@
   <div class="sidebar">
     <h2>CBF Antidoping</h2>
     <a href="/dashboard.html">Início</a>
+    <a href="#" id="logoutBtn">Sair</a>
   </div>
 
   <div class="content">
     <h1>Relatórios</h1>
-    <div class="card">
+    
+    <!-- Resumo Geral -->
+    <div class="card" style="margin-bottom: 30px;">
+      <h2 style="color: #0a3d62; margin-top: 0;">Resumo Geral do Sistema</h2>
       <button class="button" id="btnSummary">Atualizar Resumo</button>
-      <pre id="resumo"></pre>
+      <button class="button" id="btnDownloadPDF" style="background: #27ae60; margin-left: 10px;" disabled>Download PDF</button>
+      <div id="resumo" style="margin-top: 20px;"></div>
+    </div>
+
+    <!-- Relatório de Atleta Específico -->
+    <div class="card">
+      <h2 style="color: #0a3d62; margin-top: 0;">Relatório de Atleta</h2>
+      <div class="search-box" style="margin-bottom: 15px;">
+        <input type="text" id="athleteSearch" placeholder="Digite o nome do atleta...">
+        <button id="btnSearchAthlete">Buscar</button>
+      </div>
+      <div id="athleteResults" class="autocomplete-results" style="position: relative; margin-bottom: 15px;"></div>
+      <button class="button" id="btnGenerateAthleteReport" style="background: #2980b9; display: none;">Gerar Relatório</button>
+      <button class="button" id="btnDownloadAthletePDF" style="background: #27ae60; margin-left: 10px; display: none;">Download PDF</button>
+      <div id="athleteReport" style="margin-top: 20px;"></div>
     </div>
   </div>
 
-  <script type="module">
-    import { requireAuth, apiFetch } from '/js/auth.js';
-    requireAuth();
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script src="/js/auth.js"></script>
+  <script>
+    // Verificar autenticação
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/index.html';
+    }
+    
+    // Configurar botão de logout se ainda não foi configurado
+    document.addEventListener('DOMContentLoaded', () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn && typeof logout === 'function') {
+        logoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
+        });
+      }
+    });
+
+    let dadosResumo = null;
 
     document.getElementById('btnSummary').addEventListener('click', async () => {
       try {
-        const res = await apiFetch('/reports/summary');
+        const res = await fetch('/api/reports/summary', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || errorData.message || 'Erro ao carregar resumo');
+        }
+
         const d = await res.json();
-        document.getElementById('resumo').innerText = JSON.stringify(d, null, 2);
+        dadosResumo = d;
+        
+        // Formatar resumo de forma mais legível com HTML
+        const dataAtual = new Date().toLocaleString('pt-BR');
+        const resumoHTML = `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2 style="color: #0a3d62; border-bottom: 2px solid #0a3d62; padding-bottom: 10px;">
+              📊 RESUMO DO SISTEMA CBF ANTIDOPING
+            </h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+              Gerado em: ${dataAtual}
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 20px 0;">
+              <div style="background: #e8f4f8; padding: 20px; border-radius: 8px; border-left: 4px solid #2980b9;">
+                <h3 style="margin: 0 0 10px 0; color: #2980b9; font-size: 18px;">👥 Total de Atletas</h3>
+                <p style="font-size: 32px; font-weight: bold; margin: 0; color: #0a3d62;">${d.athletes || 0}</p>
+              </div>
+              
+              <div style="background: #fff4e6; padding: 20px; border-radius: 8px; border-left: 4px solid #f39c12;">
+                <h3 style="margin: 0 0 10px 0; color: #f39c12; font-size: 18px;">🧪 Total de Testes</h3>
+                <p style="font-size: 32px; font-weight: bold; margin: 0; color: #0a3d62;">${d.tests || 0}</p>
+              </div>
+              
+              <div style="background: #ffe6e6; padding: 20px; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                <h3 style="margin: 0 0 10px 0; color: #e74c3c; font-size: 18px;">⚠️ Resultados Positivos</h3>
+                <p style="font-size: 32px; font-weight: bold; margin: 0; color: #0a3d62;">${d.positives || 0}</p>
+              </div>
+            </div>
+            
+            <div style="margin-top: 30px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+              <h3 style="color: #0a3d62; margin-top: 0;">📈 Estatísticas Adicionais</h3>
+              <ul style="list-style: none; padding: 0;">
+                <li style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">
+                  <strong>Taxa de Positivos:</strong> 
+                  ${d.tests > 0 ? ((d.positives / d.tests) * 100).toFixed(2) : 0}%
+                </li>
+                <li style="padding: 8px 0; border-bottom: 1px solid #dee2e6;">
+                  <strong>Testes por Atleta:</strong> 
+                  ${d.athletes > 0 ? (d.tests / d.athletes).toFixed(2) : 0}
+                </li>
+                <li style="padding: 8px 0;">
+                  <strong>Resultados Negativos:</strong> 
+                  ${(d.tests - d.positives) || 0}
+                </li>
+              </ul>
+            </div>
+          </div>
+        `;
+        
+        document.getElementById('resumo').innerHTML = resumoHTML;
+        document.getElementById('btnDownloadPDF').disabled = false;
       } catch (e) {
-        document.getElementById('resumo').innerText = 'Erro';
+        document.getElementById('resumo').innerHTML = '<div style="color: #e74c3c; padding: 20px;">Erro: ' + e.message + '</div>';
+        console.error('Erro ao carregar resumo:', e);
+        document.getElementById('btnDownloadPDF').disabled = true;
       }
+    });
+
+    // Função para gerar e baixar PDF
+    document.getElementById('btnDownloadPDF').addEventListener('click', () => {
+      if (!dadosResumo) {
+        alert('Por favor, atualize o resumo primeiro.');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      const dataAtual = new Date().toLocaleString('pt-BR');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPos = 20;
+
+      // Título
+      doc.setFontSize(18);
+      doc.setTextColor(10, 61, 98);
+      doc.text('RESUMO DO SISTEMA CBF ANTIDOPING', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 10;
+
+      // Data
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Gerado em: ${dataAtual}`, pageWidth / 2, yPos, { align: 'center' });
+      yPos += 15;
+
+      // Estatísticas principais
+      doc.setFontSize(14);
+      doc.setTextColor(10, 61, 98);
+      doc.text('ESTATÍSTICAS PRINCIPAIS', margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Total de Atletas: ${dadosResumo.athletes || 0}`, margin, yPos);
+      yPos += 8;
+      doc.text(`Total de Testes: ${dadosResumo.tests || 0}`, margin, yPos);
+      yPos += 8;
+      doc.text(`Resultados Positivos: ${dadosResumo.positives || 0}`, margin, yPos);
+      yPos += 15;
+
+      // Estatísticas adicionais
+      doc.setFontSize(14);
+      doc.setTextColor(10, 61, 98);
+      doc.text('ESTATÍSTICAS ADICIONAIS', margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      const taxaPositivos = dadosResumo.tests > 0 ? ((dadosResumo.positives / dadosResumo.tests) * 100).toFixed(2) : 0;
+      doc.text(`Taxa de Positivos: ${taxaPositivos}%`, margin, yPos);
+      yPos += 8;
+      
+      const testesPorAtleta = dadosResumo.athletes > 0 ? (dadosResumo.tests / dadosResumo.athletes).toFixed(2) : 0;
+      doc.text(`Testes por Atleta: ${testesPorAtleta}`, margin, yPos);
+      yPos += 8;
+      
+      const negativos = (dadosResumo.tests - dadosResumo.positives) || 0;
+      doc.text(`Resultados Negativos: ${negativos}`, margin, yPos);
+
+      // Rodapé
+      const pageHeight = doc.internal.pageSize.getHeight();
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Sistema CBF Antidoping', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+      // Salvar PDF
+      const fileName = `resumo_cbf_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+    });
+
+    // ========================
+    // RELATÓRIO DE ATLETA ESPECÍFICO
+    // ========================
+    let dadosAtleta = null;
+    let selectedAthleteName = null;
+
+    // Autocomplete de atletas
+    const athleteSearchInput = document.getElementById('athleteSearch');
+    const athleteResultsDiv = document.getElementById('athleteResults');
+
+    athleteSearchInput.addEventListener('input', async () => {
+      const q = athleteSearchInput.value.trim();
+      athleteResultsDiv.innerHTML = '';
+      
+      if (q.length < 2) return;
+
+      try {
+        const res = await fetch(`/api/athletes?search=${encodeURIComponent(q)}`, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const athletes = await res.json();
+
+        if (athletes.length > 0) {
+          athleteResultsDiv.innerHTML = athletes.map(a => {
+            const fullname = `${a.first_name} ${a.last_name}`.trim();
+            return `<div class="autocomplete-item" data-name="${fullname}">${fullname} <small>${a.id_document || ''}</small></div>`;
+          }).join('');
+
+          athleteResultsDiv.querySelectorAll('.autocomplete-item').forEach(el => {
+            el.addEventListener('click', () => {
+              selectedAthleteName = el.dataset.name;
+              athleteSearchInput.value = selectedAthleteName;
+              athleteResultsDiv.innerHTML = '';
+              document.getElementById('btnGenerateAthleteReport').style.display = 'inline-block';
+              document.getElementById('btnDownloadAthletePDF').style.display = 'none';
+              document.getElementById('athleteReport').innerHTML = '';
+            });
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar atletas:', error);
+      }
+    });
+
+    // Gerar relatório do atleta
+    document.getElementById('btnGenerateAthleteReport').addEventListener('click', async () => {
+      if (!selectedAthleteName) {
+        alert('Por favor, selecione um atleta primeiro.');
+        return;
+      }
+
+      try {
+        const url = `/api/reports/athlete?name=${encodeURIComponent(selectedAthleteName)}`;
+        console.log('Buscando relatório do atleta:', url);
+        
+        const res = await fetch(url, {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+
+        console.log('Resposta da API:', res.status, res.statusText);
+
+        // Ler a resposta
+        let responseData;
+        
+        // Verificar content-type antes de ler
+        const contentType = res.headers.get('content-type') || '';
+        
+        if (contentType.includes('application/json')) {
+          responseData = await res.json();
+        } else {
+          // Se não for JSON, ler como texto para debug
+          const text = await res.text();
+          console.error('Resposta não é JSON. Status:', res.status);
+          console.error('Conteúdo:', text.substring(0, 200));
+          
+          // Tentar parsear como JSON mesmo assim (pode ser que o header esteja errado)
+          try {
+            responseData = JSON.parse(text);
+          } catch (e) {
+            // Se for HTML (404), a rota não foi encontrada
+            if (text.includes('<!DOCTYPE') || text.includes('<html') || res.status === 404) {
+              throw new Error(`Erro 404: Rota não encontrada. Por favor, reinicie o servidor de desenvolvimento (pare e inicie novamente o dev-server.js) para que a rota /api/reports/athlete seja reconhecida.`);
+            }
+            throw new Error(`Erro ${res.status}: A API retornou uma resposta inválida. ${text.substring(0, 100)}`);
+          }
+        }
+
+        if (!res.ok) {
+          console.error('Erro na resposta:', responseData);
+          const errorMsg = responseData.error || responseData.message || `Erro ${res.status}: ${res.statusText}`;
+          
+          // Mensagens específicas para erros comuns
+          if (res.status === 401) {
+            throw new Error('Não autorizado. Faça login novamente.');
+          } else if (res.status === 403) {
+            throw new Error('Acesso negado. Você não tem permissão para acessar este relatório.');
+          } else if (res.status === 404) {
+            throw new Error('Atleta não encontrado.');
+          }
+          
+          throw new Error(errorMsg);
+        }
+
+        dadosAtleta = responseData;
+        console.log('Dados do atleta recebidos:', responseData);
+
+        const dataAtual = new Date().toLocaleString('pt-BR');
+        const nomeCompleto = `${dadosAtleta.athlete.first_name} ${dadosAtleta.athlete.last_name}`;
+        
+        // Formatar data de nascimento
+        const dataNasc = dadosAtleta.athlete.date_of_birth 
+          ? new Date(dadosAtleta.athlete.date_of_birth).toLocaleDateString('pt-BR')
+          : 'Não informado';
+
+        const reportHTML = `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2 style="color: #0a3d62; border-bottom: 2px solid #0a3d62; padding-bottom: 10px;">
+              👤 RELATÓRIO DO ATLETA
+            </h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">
+              Gerado em: ${dataAtual}
+            </p>
+
+            <!-- Dados do Atleta -->
+            <div style="background: #e8f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <h3 style="color: #2980b9; margin-top: 0;">Informações do Atleta</h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div><strong>Nome:</strong> ${nomeCompleto}</div>
+                <div><strong>Data de Nascimento:</strong> ${dataNasc}</div>
+                <div><strong>Nacionalidade:</strong> ${dadosAtleta.athlete.nationality || 'Não informado'}</div>
+                <div><strong>Gênero:</strong> ${dadosAtleta.athlete.gender || 'Não informado'}</div>
+                <div><strong>Documento:</strong> ${dadosAtleta.athlete.id_document || 'Não informado'}</div>
+              </div>
+            </div>
+
+            <!-- Estatísticas -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
+              <div style="background: #fff4e6; padding: 20px; border-radius: 8px; border-left: 4px solid #f39c12;">
+                <h3 style="margin: 0 0 10px 0; color: #f39c12; font-size: 18px;">🧪 Total de Testes</h3>
+                <p style="font-size: 32px; font-weight: bold; margin: 0; color: #0a3d62;">${dadosAtleta.statistics.total_tests || 0}</p>
+              </div>
+              
+              <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; border-left: 4px solid #4caf50;">
+                <h3 style="margin: 0 0 10px 0; color: #4caf50; font-size: 18px;">✅ Resultados</h3>
+                <p style="font-size: 32px; font-weight: bold; margin: 0; color: #0a3d62;">${dadosAtleta.statistics.total_results || 0}</p>
+              </div>
+              
+              <div style="background: #ffe6e6; padding: 20px; border-radius: 8px; border-left: 4px solid #e74c3c;">
+                <h3 style="margin: 0 0 10px 0; color: #e74c3c; font-size: 18px;">⚠️ Positivos</h3>
+                <p style="font-size: 32px; font-weight: bold; margin: 0; color: #0a3d62;">${dadosAtleta.statistics.positive_results || 0}</p>
+              </div>
+              
+              <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; border-left: 4px solid #27ae60;">
+                <h3 style="margin: 0 0 10px 0; color: #27ae60; font-size: 18px;">✓ Negativos</h3>
+                <p style="font-size: 32px; font-weight: bold; margin: 0; color: #0a3d62;">${dadosAtleta.statistics.negative_results || 0}</p>
+              </div>
+            </div>
+
+            <!-- Lista de Testes -->
+            <div style="margin-top: 30px;">
+              <h3 style="color: #0a3d62;">Histórico de Testes</h3>
+              ${dadosAtleta.tests.length > 0 ? `
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                  <thead>
+                    <tr style="background: #f8f9fa;">
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">ID da Amostra</th>
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Data Agendada</th>
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Laboratório</th>
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Situação</th>
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Resultados</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${dadosAtleta.tests.map(t => {
+                      // Traduzir situação/status para português
+                      let situacaoTraduzida = t.status || '—';
+                      if (situacaoTraduzida !== '—') {
+                        const statusLower = situacaoTraduzida.toLowerCase();
+                        const traducoes = {
+                          'pending': 'Pendente',
+                          'scheduled': 'Agendado',
+                          'completed': 'Concluído',
+                          'in_progress': 'Em Andamento',
+                          'cancelled': 'Cancelado',
+                          'collected': 'Coletado',
+                          'analyzed': 'Analisado',
+                          'awaiting': 'Aguardando',
+                          'awaiting_results': 'Aguardando Resultados'
+                        };
+                        situacaoTraduzida = traducoes[statusLower] || situacaoTraduzida;
+                      }
+                      return `
+                      <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px;">${t.sample_id || t.id.substring(0, 8)}</td>
+                        <td style="padding: 10px;">${t.scheduled_date ? new Date(t.scheduled_date).toLocaleDateString('pt-BR') : '—'}</td>
+                        <td style="padding: 10px;">${t.laboratory || '—'}</td>
+                        <td style="padding: 10px;">${situacaoTraduzida}</td>
+                        <td style="padding: 10px;">${t.results_count || 0}</td>
+                      </tr>
+                    `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              ` : '<p style="color: #666; padding: 20px;">Nenhum teste encontrado para este atleta.</p>'}
+            </div>
+
+            <!-- Lista de Resultados -->
+            <div style="margin-top: 30px;">
+              <h3 style="color: #0a3d62;">Histórico de Resultados</h3>
+              ${dadosAtleta.results.length > 0 ? `
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                  <thead>
+                    <tr style="background: #f8f9fa;">
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Data</th>
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Resultado</th>
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Substâncias</th>
+                      <th style="padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;">Laboratório</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${dadosAtleta.results.map(r => {
+                      // Traduzir resultado para português
+                      let resultadoTraduzido = r.result || '—';
+                      if (resultadoTraduzido !== '—') {
+                        const resultLower = resultadoTraduzido.toLowerCase();
+                        if (resultLower === 'positive' || resultLower === 'positivo') {
+                          resultadoTraduzido = 'Positivo';
+                        } else if (resultLower === 'negative' || resultLower === 'negativo') {
+                          resultadoTraduzido = 'Negativo';
+                        }
+                      }
+
+                      const resultColor = (resultadoTraduzido === 'Positivo') ? '#e74c3c' : '#27ae60';
+                      let substancias = '—';
+                      if (r.substances) {
+                        try {
+                          const subs = typeof r.substances === 'string' ? JSON.parse(r.substances) : r.substances;
+                          if (Array.isArray(subs) && subs.length > 0) {
+                            substancias = subs.join(', ');
+                          }
+                        } catch (e) {
+                          substancias = r.substances;
+                        }
+                      }
+                      return `
+                        <tr style="border-bottom: 1px solid #dee2e6;">
+                          <td style="padding: 10px;">${r.reported_at ? new Date(r.reported_at).toLocaleDateString('pt-BR') : '—'}</td>
+                          <td style="padding: 10px; color: ${resultColor}; font-weight: bold;">${resultadoTraduzido}</td>
+                          <td style="padding: 10px;">${substancias}</td>
+                          <td style="padding: 10px;">${r.laboratory || '—'}</td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              ` : '<p style="color: #666; padding: 20px;">Nenhum resultado encontrado para este atleta.</p>'}
+            </div>
+          </div>
+        `;
+
+        document.getElementById('athleteReport').innerHTML = reportHTML;
+        document.getElementById('btnDownloadAthletePDF').style.display = 'inline-block';
+      } catch (e) {
+        const errorMsg = e.message || 'Erro desconhecido ao carregar relatório';
+        document.getElementById('athleteReport').innerHTML = `
+          <div style="color: #e74c3c; padding: 20px; background: #ffe6e6; border-radius: 8px; border-left: 4px solid #e74c3c;">
+            <strong>Erro ao gerar relatório:</strong><br>
+            ${errorMsg}<br>
+            <small style="color: #666;">Verifique o console para mais detalhes.</small>
+          </div>
+        `;
+        console.error('Erro ao carregar relatório do atleta:', e);
+        console.error('Nome do atleta buscado:', selectedAthleteName);
+        document.getElementById('btnDownloadAthletePDF').style.display = 'none';
+      }
+    });
+
+    // Download PDF do relatório do atleta
+    document.getElementById('btnDownloadAthletePDF').addEventListener('click', () => {
+      if (!dadosAtleta) {
+        alert('Por favor, gere o relatório primeiro.');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      const dataAtual = new Date().toLocaleString('pt-BR');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      let yPos = 20;
+
+      const nomeCompleto = `${dadosAtleta.athlete.first_name} ${dadosAtleta.athlete.last_name}`;
+      const dataNasc = dadosAtleta.athlete.date_of_birth 
+        ? new Date(dadosAtleta.athlete.date_of_birth).toLocaleDateString('pt-BR')
+        : 'Não informado';
+
+      // Título
+      doc.setFontSize(18);
+      doc.setTextColor(10, 61, 98);
+      doc.text('RELATÓRIO DO ATLETA', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 10;
+
+      // Data
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Gerado em: ${dataAtual}`, pageWidth / 2, yPos, { align: 'center' });
+      yPos += 15;
+
+      // Informações do Atleta
+      doc.setFontSize(14);
+      doc.setTextColor(10, 61, 98);
+      doc.text('INFORMAÇÕES DO ATLETA', margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Nome: ${nomeCompleto}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Data de Nascimento: ${dataNasc}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Nacionalidade: ${dadosAtleta.athlete.nationality || 'Não informado'}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Gênero: ${dadosAtleta.athlete.gender || 'Não informado'}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Documento: ${dadosAtleta.athlete.id_document || 'Não informado'}`, margin, yPos);
+      yPos += 15;
+
+      // Estatísticas
+      doc.setFontSize(14);
+      doc.setTextColor(10, 61, 98);
+      doc.text('ESTATÍSTICAS', margin, yPos);
+      yPos += 10;
+
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Total de Testes: ${dadosAtleta.statistics.total_tests || 0}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Total de Resultados: ${dadosAtleta.statistics.total_results || 0}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Resultados Positivos: ${dadosAtleta.statistics.positive_results || 0}`, margin, yPos);
+      yPos += 7;
+      doc.text(`Resultados Negativos: ${dadosAtleta.statistics.negative_results || 0}`, margin, yPos);
+      yPos += 15;
+
+      // Testes
+      if (dadosAtleta.tests.length > 0) {
+        doc.setFontSize(14);
+        doc.setTextColor(10, 61, 98);
+        doc.text('HISTÓRICO DE TESTES', margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        dadosAtleta.tests.forEach((t, idx) => {
+          if (yPos > pageHeight - 30) {
+            doc.addPage();
+            yPos = 20;
+          }
+          // Traduzir situação/status para português
+          let situacaoTraduzida = t.status || 'Não informado';
+          if (situacaoTraduzida !== 'Não informado') {
+            const statusLower = situacaoTraduzida.toLowerCase();
+            const traducoes = {
+              'pending': 'Pendente',
+              'scheduled': 'Agendado',
+              'completed': 'Concluído',
+              'in_progress': 'Em Andamento',
+              'cancelled': 'Cancelado',
+              'collected': 'Coletado',
+              'analyzed': 'Analisado',
+              'awaiting': 'Aguardando',
+              'awaiting_results': 'Aguardando Resultados'
+            };
+            situacaoTraduzida = traducoes[statusLower] || situacaoTraduzida;
+          }
+          doc.text(`${idx + 1}. ${t.sample_id || t.id.substring(0, 8)} - ${t.scheduled_date ? new Date(t.scheduled_date).toLocaleDateString('pt-BR') : 'Não informado'} - ${situacaoTraduzida}`, margin, yPos);
+          yPos += 6;
+        });
+        yPos += 10;
+      }
+
+      // Resultados
+      if (dadosAtleta.results.length > 0) {
+        if (yPos > pageHeight - 40) {
+          doc.addPage();
+          yPos = 20;
+        }
+
+        doc.setFontSize(14);
+        doc.setTextColor(10, 61, 98);
+        doc.text('HISTÓRICO DE RESULTADOS', margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        dadosAtleta.results.forEach((r, idx) => {
+          if (yPos > pageHeight - 30) {
+            doc.addPage();
+            yPos = 20;
+          }
+          // Traduzir resultado para português
+          let resultadoTraduzido = r.result || 'Não informado';
+          if (resultadoTraduzido !== 'Não informado') {
+            const resultLower = resultadoTraduzido.toLowerCase();
+            if (resultLower === 'positive' || resultLower === 'positivo') {
+              resultadoTraduzido = 'Positivo';
+            } else if (resultLower === 'negative' || resultLower === 'negativo') {
+              resultadoTraduzido = 'Negativo';
+            }
+          }
+          const resultColor = (resultadoTraduzido === 'Positivo') ? [231, 76, 60] : [39, 174, 96];
+          doc.setTextColor(resultColor[0], resultColor[1], resultColor[2]);
+          doc.text(`${idx + 1}. ${r.reported_at ? new Date(r.reported_at).toLocaleDateString('pt-BR') : 'Não informado'} - ${resultadoTraduzido}`, margin, yPos);
+          doc.setTextColor(0, 0, 0);
+          yPos += 6;
+        });
+      }
+
+      // Rodapé
+      const pageHeight2 = doc.internal.pageSize.getHeight();
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Sistema CBF Antidoping', pageWidth / 2, pageHeight2 - 10, { align: 'center' });
+
+      // Salvar PDF
+      const fileName = `relatorio_${nomeCompleto.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
     });
   </script>
 </body>

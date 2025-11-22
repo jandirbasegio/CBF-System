@@ -11,7 +11,7 @@
 <header>
   <h1>Novo Atleta</h1>
   <nav>
-    <a href="/dashboard.html">Dashboard</a>
+    <a href="/dashboard.html">Inicio</a>
     <a href="/atletas.html">Atletas</a>
     <a href="/novo-atleta.html">Novo Atleta</a>
     <a href="#" id="logoutBtn">Sair</a>
@@ -19,7 +19,7 @@
 </header>
 
 <main>
-  <h2>Cadastrar Atleta</h2>
+  <h2 id="pageTitle">Cadastrar Atleta</h2>
 
   <form id="formAtleta">
     <input id="first_name" placeholder="Nome" required>
@@ -28,7 +28,7 @@
     <input id="nationality" placeholder="Nacionalidade">
     <input id="gender" placeholder="Gênero">
     <input id="id_document" placeholder="Documento (único)">
-    <button type="submit">Salvar</button>
+    <button type="submit" id="submitBtn">Salvar</button>
   </form>
 
   <p id="statusMsg"></p>
@@ -36,6 +36,95 @@
 
 <script src="/js/auth.js"></script>
 <script src="/js/athletes.js"></script>
+<script>
+  // Verificar se está em modo de edição
+  (function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editName = urlParams.get('edit');
+    
+    if (editName) {
+      // Aguardar DOM carregar
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', carregarDados);
+      } else {
+        carregarDados();
+      }
+      
+      function carregarDados() {
+        const pageTitle = document.getElementById('pageTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const form = document.getElementById('formAtleta');
+        
+        if (pageTitle) pageTitle.textContent = 'Editar Atleta';
+        if (submitBtn) submitBtn.textContent = 'Atualizar';
+        if (form) form.dataset.editName = editName;
+        
+        // Carregar dados do atleta
+        async function carregarDadosAtleta() {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            const statusMsg = document.getElementById('statusMsg');
+            if (statusMsg) {
+              statusMsg.textContent = 'Erro: Token não encontrado. Faça login novamente.';
+              statusMsg.style.color = '#e74c3c';
+            }
+            return;
+          }
+          
+          try {
+            const res = await fetch(`/api/athletes/name?name=${encodeURIComponent(editName)}`, {
+              headers: { Authorization: 'Bearer ' + token }
+            });
+            
+            if (!res.ok) {
+              const errorData = await res.json().catch(() => ({}));
+              throw new Error(errorData.error || errorData.message || 'Erro ao carregar dados do atleta');
+            }
+            
+            const atleta = await res.json();
+            
+            if (!atleta || !atleta.first_name) {
+              throw new Error('Atleta não encontrado ou dados inválidos');
+            }
+            
+            // Preencher formulário
+            const first_name = document.getElementById('first_name');
+            const last_name = document.getElementById('last_name');
+            const date_of_birth = document.getElementById('date_of_birth');
+            const nationality = document.getElementById('nationality');
+            const gender = document.getElementById('gender');
+            const id_document = document.getElementById('id_document');
+            
+            if (first_name) first_name.value = atleta.first_name || '';
+            if (last_name) last_name.value = atleta.last_name || '';
+            
+            // Formatar data de nascimento
+            if (date_of_birth && atleta.date_of_birth) {
+              const date = new Date(atleta.date_of_birth);
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              date_of_birth.value = `${year}-${month}-${day}`;
+            }
+            
+            if (nationality) nationality.value = atleta.nationality || '';
+            if (gender) gender.value = atleta.gender || '';
+            if (id_document) id_document.value = atleta.id_document || '';
+          } catch (error) {
+            const statusMsg = document.getElementById('statusMsg');
+            if (statusMsg) {
+              statusMsg.textContent = 'Erro ao carregar dados: ' + error.message;
+              statusMsg.style.color = '#e74c3c';
+            }
+            console.error('Erro ao carregar atleta:', error);
+          }
+        }
+        
+        carregarDadosAtleta();
+      }
+    }
+  })();
+</script>
 
 </body>
 </html>

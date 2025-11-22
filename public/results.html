@@ -10,39 +10,169 @@
   <div class="sidebar">
     <h2>CBF Antidoping</h2>
     <a href="/dashboard.html">Início</a>
+    <a href="/results.html">Resultados</a>
     <a href="/novo-result.html">Novo Resultado</a>
+    <a href="#" id="logoutBtn">Sair</a>
   </div>
 
   <div class="content">
     <h1>Resultados</h1>
+
+    <div class="search-box">
+      <input type="text" id="searchResult" placeholder="Buscar resultado por nome do atleta...">
+      <button id="btnSearch">Buscar</button>
+    </div>
+
     <div id="lista"></div>
   </div>
 
-  <script type="module">
-    import { requireAuth, apiFetch } from '/js/auth.js';
-    requireAuth();
+  <script src="/js/auth.js"></script>
+  <script>
+    // Verificar autenticação
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/index.html';
+    }
+    
+    // Configurar botão de logout se ainda não foi configurado
+    document.addEventListener('DOMContentLoaded', () => {
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn && typeof logout === 'function') {
+        logoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          logout();
+        });
+      }
+    });
 
     const lista = document.getElementById('lista');
 
-    async function carregarResultados() {
+    async function carregarResultados(filter = '') {
       try {
-        const res = await apiFetch('/test-results');
-        const data = await res.json();
-        lista.innerHTML = data.map(r => `
+        const res = await fetch('/api/test-results', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+
+        if (!res.ok) {
+          throw new Error('Erro ao carregar resultados');
+        }
+
+        let data = await res.json();
+
+        // Filtrar por nome do atleta se houver filtro
+        if (filter) {
+          const filterLower = filter.toLowerCase();
+          data = data.filter(r => {
+            const nomeCompleto = `${r.first_name || ''} ${r.last_name || ''}`.toLowerCase();
+            return nomeCompleto.includes(filterLower);
+          });
+        }
+
+        lista.innerHTML = data.map(r => {
+          const nomeAtleta = r.first_name && r.last_name 
+            ? `${r.first_name} ${r.last_name}` 
+            : 'Atleta desconhecido';
+          
+          const resultId = r.id ? r.id.substring(0, 8) : 'Não disponível';
+          const sampleId = r.sample_id || '—';
+          
+          // Formatar substâncias
+          let substanciasStr = '—';
+          if (r.substances) {
+            try {
+              const subs = typeof r.substances === 'string' ? JSON.parse(r.substances) : r.substances;
+              if (Array.isArray(subs) && subs.length > 0) {
+                substanciasStr = subs.join(', ');
+              }
+            } catch (e) {
+              substanciasStr = r.substances;
+            }
+          }
+
+          // Formatar data
+          const dataReportado = r.reported_at 
+            ? new Date(r.reported_at).toLocaleString('pt-BR')
+            : '—';
+
+          // Traduzir resultado para português
+          let resultadoTraduzido = r.result || '—';
+          if (resultadoTraduzido !== '—') {
+            const resultLower = resultadoTraduzido.toLowerCase();
+            if (resultLower === 'positive' || resultLower === 'positivo') {
+              resultadoTraduzido = 'Positivo';
+            } else if (resultLower === 'negative' || resultLower === 'negativo') {
+              resultadoTraduzido = 'Negativo';
+            }
+          }
+
+          // Cor do resultado
+          const resultClass = resultadoTraduzido === 'Positivo' ? 'style="color: #27ae60; font-weight: bold;"' 
+                            : resultadoTraduzido === 'Negativo' ? 'style="color: #e74c3c; font-weight: bold;"'
+                            : '';
+
+          return `
           <div class="card">
-            <b>Resultado ${r.id}</b><br>
-            Teste: ${r.test_id}<br>
-            Atleta: ${r.first_name || ''} ${r.last_name || ''} <small>${r.id_document || ''}</small><br>
-            Resultado: ${r.result}<br>
-            Substâncias: ${r.substances ? JSON.stringify(r.substances) : '—'}<br>
-            Laudo: ${r.analysis_report || '—'}<br>
-            Reportado em: ${r.reported_at || ''}
+            <b>Resultado: ${resultId}</b><br>
+            Atleta: ${nomeAtleta} ${r.id_document ? '<small>(' + r.id_document + ')</small>' : ''}<br>
+            Teste/Amostra: ${sampleId}<br>
+            <span ${resultClass}>Resultado: ${resultadoTraduzido}</span><br>
+            ${substanciasStr !== '—' ? 'Substâncias: ' + substanciasStr + '<br>' : ''}
+            ${r.analysis_report ? 'Laudo: ' + r.analysis_report.substring(0, 100) + (r.analysis_report.length > 100 ? '...' : '') + '<br>' : ''}
+            <small>Reportado em: ${dataReportado}</small><br>
+            <button onclick="deleteResult('${r.id}')">Excluir</button>
           </div>
-        `).join('');
+        `;
+        }).join('');
+
+        if (data.length === 0) {
+          lista.innerHTML = '<div class="card"><p>Nenhum resultado encontrado.</p></div>';
+        }
       } catch (e) {
-        lista.innerText = 'Erro ao carregar resultados';
+        lista.innerText = 'Erro ao carregar resultados: ' + e.message;
+        console.error('Erro ao carregar resultados:', e);
       }
     }
+
+    document.getElementById('btnSearch')?.addEventListener('click', () => {
+      const search = document.getElementById('searchResult').value;
+      carregarResultados(search);
+    });
+
+    // ========================
+    // APAGAR RESULTADO
+    // ========================
+
+    async function deleteResult(id) {
+        if (!confirm("Deseja excluir este resultado?")) return;
+
+        const token = localStorage.getItem("token");
+
+        try {
+            const res = await fetch(`/api/test-results/id?id=${encodeURIComponent(id)}`, {
+                method: "DELETE",
+                headers: { 
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+                const search = document.getElementById('searchResult').value;
+                carregarResultados(search);
+            } else {
+                alert("Erro ao excluir resultado: " + (data.error || data.message || "Erro desconhecido"));
+                console.error("Erro ao excluir resultado:", data);
+            }
+        } catch (error) {
+            alert("Erro de conexão ao excluir resultado: " + error.message);
+            console.error("Erro ao fazer requisição:", error);
+        }
+    }
+
+    // Tornar função global para ser acessível pelo onclick
+    window.deleteResult = deleteResult;
 
     carregarResultados();
   </script>

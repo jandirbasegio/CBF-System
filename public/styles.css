@@ -22,6 +22,7 @@ body {
   flex-direction: column;
   padding: 20px;
   overflow-y: auto;
+  position: relative;
 }
 
 .sidebar h2 {
@@ -46,13 +47,40 @@ body {
   background: #1e5799;
 }
 
+/* Botão de sair fixo na parte inferior - vermelho padronizado */
+.sidebar a#logoutBtn {
+  margin-top: auto;
+  background: #e74c3c !important;
+  color: white !important;
+  text-align: center;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+  margin-top: auto !important;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar a#logoutBtn:hover {
+  background: #c0392b !important;
+  transform: translateY(-1px);
+}
+
 .sidebar a[onclick] {
   margin-top: auto;
-  background: #c0392b !important;
+  background: #e74c3c !important;
+  color: white !important;
+  margin-bottom: 0;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar a[onclick]:hover {
-  background: #a93226 !important;
+  background: #c0392b !important;
+  transform: translateY(-1px);
 }
 
 /* HEADER (para páginas que usam header+main) */
@@ -64,6 +92,7 @@ header {
   flex-direction: column;
   padding: 20px;
   overflow-y: auto;
+  position: relative;
 }
 
 header h1 {
@@ -76,6 +105,7 @@ header h1 {
 header nav {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 header nav a {
@@ -93,15 +123,40 @@ header nav a:hover {
   background: #1e5799;
 }
 
-header nav a#logoutBtn,
-header nav a[onclick] {
+/* Botão de sair fixo na parte inferior - vermelho padronizado */
+header nav a#logoutBtn {
   margin-top: auto;
-  background: #c0392b !important;
+  background: #e74c3c !important;
+  color: white !important;
+  text-align: center;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+  margin-top: auto !important;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
 }
 
-header nav a#logoutBtn:hover,
+header nav a#logoutBtn:hover {
+  background: #c0392b !important;
+  transform: translateY(-1px);
+}
+
+header nav a[onclick] {
+  margin-top: auto;
+  background: #e74c3c !important;
+  color: white !important;
+  margin-bottom: 0;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
 header nav a[onclick]:hover {
-  background: #a93226 !important;
+  background: #c0392b !important;
+  transform: translateY(-1px);
 }
 
 /* MAIN CONTENT */
